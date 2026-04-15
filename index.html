@@ -3,37 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entel - Consultor de Ofertas Pro</title>
+    <title>Entel - Consultor de Ofertas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap');
-        body { font-family: 'Poppins', sans-serif; background-color: #f0f4f8; }
-        .entel-blue { background: linear-gradient(90deg, #0033a0 0%, #0056fb 100%); }
+        body { font-family: 'Poppins', sans-serif; background-color: #f3f6ff; }
+        .entel-blue { background: linear-gradient(135deg, #0033a0 0%, #0056fb 100%); }
         .entel-orange { background: linear-gradient(90deg, #ff8200 0%, #ffaa00 100%); }
-        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 51, 160, 0.1), 0 8px 10px -6px rgba(0, 51, 160, 0.1); }
+        .card-pop { border-radius: 2rem; }
     </style>
 </head>
 <body class="pb-10">
 
-    <div class="entel-blue pt-8 pb-12 px-4 shadow-2xl rounded-b-[3rem]">
+    <div class="entel-blue pt-10 pb-16 px-6 shadow-2xl rounded-b-[3.5rem] mb-6">
         <div class="max-w-md mx-auto text-center">
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Entel_Chile_logo.svg/1200px-Entel_Chile_logo.svg.png" 
                  alt="Entel" class="h-10 mx-auto mb-6 invert">
             
             <div class="relative">
                 <input type="text" id="buscador" 
-                       placeholder="Buscar equipo o código..." 
-                       class="w-full p-5 rounded-2xl shadow-2xl text-lg outline-none focus:ring-4 focus:ring-orange-400 border-none">
-                <span class="absolute right-5 top-5 opacity-30 text-2xl">🔍</span>
+                       placeholder="Buscar modelo o SKU..." 
+                       class="w-full p-5 rounded-2xl shadow-xl text-lg outline-none focus:ring-4 focus:ring-orange-400 border-none transition-all">
             </div>
-            <div id="contador" class="mt-4 text-blue-100 text-xs font-bold uppercase tracking-widest">Cargando base de datos...</div>
+            <div id="contador" class="mt-4 text-blue-100 text-[10px] font-bold uppercase tracking-widest">Cargando datos...</div>
         </div>
     </div>
 
-    <div class="max-w-md mx-auto p-4 -mt-6">
-        <div id="lista-equipos" class="grid gap-6">
-            </div>
+    <div class="max-w-md mx-auto px-4">
+        <div id="lista-equipos" class="grid gap-6"></div>
     </div>
 
     <script>
@@ -44,13 +42,13 @@
                 const res = await fetch('precios.xlsx');
                 const buf = await res.arrayBuffer();
                 const wb = XLSX.read(buf, { type: 'array' });
-                const ws = wb.Sheets[wb.SheetNames[0]];
+                const ws = wb.Sheets[workbook.SheetNames[0] || wb.SheetNames[1]]; // Busca en las hojas disponibles
                 baseDatos = XLSX.utils.sheet_to_json(ws);
                 
-                document.getElementById('contador').innerText = `${baseDatos.length} Equipos en Oferta`;
+                document.getElementById('contador').innerText = `${baseDatos.length} Ofertas disponibles`;
                 render(baseDatos);
             } catch (e) {
-                document.getElementById('contador').innerText = "❌ No se encontró el archivo precios.xlsx";
+                document.getElementById('contador').innerText = "⚠️ Error: Verifica precios.xlsx";
             }
         }
 
@@ -59,46 +57,46 @@
             grid.innerHTML = "";
 
             items.forEach(item => {
-                // MAPEO DE COLUMNAS SEGÚN TU EXCEL REAL:
-                const nombre = item['Descripción'] || "Equipo";
-                const sku = item['COD_BARRA'] || item['SKU'] || "N/A";
-                const descuento = item['DCTO'] || 0;
-                
-                // Buscamos el valor en "QUEDA CON MANDATO LIGTH" o similares
+                const descripcion = item['Descripción'] || "Sin nombre";
+                const codBarra = item['COD_BARRA'] || "N/A";
+                const dcto = item['DCTO'] || 0;
                 const precioFinal = item['QUEDA CON MANDATO LIGTH'] || item['QUEDA CON'] || 0;
 
-                grid.innerHTML += `
-                    <div class="bg-white rounded-[2rem] overflow-hidden card-shadow border border-blue-50">
-                        <div class="bg-gray-50 p-4 border-b border-gray-100 flex justify-between items-center">
-                            <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-tighter">
-                                SKU: ${sku}
-                            </span>
-                            <button onclick="copy('${sku}')" class="text-xs font-bold text-gray-400 hover:text-orange-500 transition-colors">Copiar Código</button>
-                        </div>
+                // Solo mostramos si hay un precio final válido
+                if (precioFinal && !isNaN(precioFinal)) {
+                    grid.innerHTML += `
+                        <div class="bg-white card-pop shadow-xl overflow-hidden border border-blue-50">
+                            <div class="bg-gray-100 px-6 py-2 flex justify-between items-center border-b border-gray-200">
+                                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">SKU EQUIPO: ${codBarra}</span>
+                                <button onclick="copy('${codBarra}')" class="text-[10px] font-black text-blue-600">COPIAR</button>
+                            </div>
 
-                        <div class="p-6">
-                            <h2 class="text-blue-900 font-black text-xl mb-6 leading-tight uppercase">${nombre}</h2>
-                            
-                            <div class="flex items-center gap-4">
-                                <div class="flex-1 bg-green-50 p-3 rounded-2xl border border-green-100">
-                                    <span class="block text-[9px] text-green-600 font-black uppercase">Ahorro</span>
-                                    <span class="text-lg font-black text-green-500">-$${Number(descuento).toLocaleString('es-CL')}</span>
-                                </div>
+                            <div class="p-6">
+                                <h2 class="text-blue-900 font-black text-xl mb-6 leading-tight uppercase">
+                                    ${descripcion}
+                                </h2>
+                                
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1 bg-green-50 p-3 rounded-2xl border border-green-100 text-center">
+                                        <span class="block text-[9px] text-green-600 font-black uppercase">Descuento</span>
+                                        <span class="text-xl font-black text-green-500">-$${Number(dcto).toLocaleString('es-CL')}</span>
+                                    </div>
 
-                                <div class="flex-1 entel-orange p-3 rounded-2xl shadow-lg transform scale-110">
-                                    <span class="block text-[9px] text-white font-black uppercase opacity-80">Pagas con Plan</span>
-                                    <span class="text-2xl font-black text-white">$${Number(precioFinal).toLocaleString('es-CL')}</span>
+                                    <div class="flex-1 entel-orange p-3 rounded-2xl shadow-lg text-center transform scale-105">
+                                        <span class="block text-[9px] text-white font-black uppercase opacity-90">Valor Final</span>
+                                        <span class="text-2xl font-black text-white">$${Number(precioFinal).toLocaleString('es-CL')}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             });
         }
 
-        function copy(txt) {
-            navigator.clipboard.writeText(txt);
-            alert("SKU copiado al portapapeles");
+        function copy(sku) {
+            navigator.clipboard.writeText(sku);
+            alert("Código copiado");
         }
 
         document.getElementById('buscador').addEventListener('input', (e) => {
