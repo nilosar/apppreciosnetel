@@ -14,38 +14,31 @@ function renderCards(filter = "") {
             document.getElementById('noResults').classList.add('hidden');
 
             items.forEach(item => {
-                // Leemos los valores directamente del Excel sin cálculos extra
-                const pNormal = Number(item.precio) || 0;
+                // Leemos los datos directos del Excel
                 const pPlan = Number(item.precio_plan) || 0;
-                
-                // Calculamos el ahorro solo para mostrarlo como info adicional
-                const ahorro = pNormal - pPlan;
+                const dsctoRealizado = Number(item.descuento) || 0;
                 
                 resultsGrid.innerHTML += `
-                    <div class="bg-white rounded-2xl shadow-md p-5 border-l-8 border-blue-800 hover:shadow-xl transition-all">
+                    <div class="bg-white rounded-2xl shadow-md p-5 border-l-8 border-orange-500 hover:shadow-xl transition-all">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-[10px] font-bold bg-gray-100 px-2 py-1 rounded text-gray-500">SKU: ${item.sku}</span>
-                            <button onclick="copyToClipboard('${item.sku}')" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-bold hover:bg-blue-100">📋 Copiar</button>
+                            <button onclick="copyToClipboard('${item.sku}')" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-bold hover:bg-blue-100">📋 Copiar SKU</button>
                         </div>
                         
                         <h3 class="text-gray-800 font-bold text-lg mb-4 h-12 overflow-hidden">${item.modelo}</h3>
                         
-                        <div class="bg-gray-50 rounded-xl p-3">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-[10px] text-gray-400 font-bold uppercase">Precio Normal</span>
-                                <span class="text-gray-500 line-through font-medium">$${pNormal.toLocaleString('es-CL')}</span>
+                        <div class="bg-blue-50 rounded-xl p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-[11px] text-blue-700 font-bold uppercase tracking-wider">Descuento aplicado</span>
+                                <span class="bg-green-500 text-white text-xs font-black px-2 py-1 rounded">-$${dsctoRealizado.toLocaleString('es-CL')}</span>
                             </div>
                             
-                            <div class="flex justify-between items-end border-t border-gray-200 pt-2 mt-1">
-                                <div>
-                                    <span class="block text-[11px] text-orange-500 font-black uppercase tracking-tighter">Precio con Plan</span>
+                            <div class="border-t border-blue-100 pt-3">
+                                <span class="block text-[11px] text-gray-500 font-black uppercase tracking-tighter">Valor con Plan Entel</span>
+                                <div class="flex items-baseline gap-1">
                                     <span class="text-3xl font-black text-blue-900">$${pPlan.toLocaleString('es-CL')}</span>
+                                    <span class="text-sm text-blue-900 font-bold">IVA incl.</span>
                                 </div>
-                                ${ahorro > 0 ? `
-                                <div class="text-right">
-                                    <span class="block text-[10px] text-green-600 font-bold">AHORRO</span>
-                                    <span class="text-sm font-bold text-green-600">-$${ahorro.toLocaleString('es-CL')}</span>
-                                </div>` : ''}
                             </div>
                         </div>
                     </div>
