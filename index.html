@@ -1,47 +1,115 @@
-function renderCards(filter = "") {
-            const resultsGrid = document.getElementById('resultsGrid');
-            resultsGrid.innerHTML = "";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entel - Consultor de Ofertas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f0f2f5; }
+        .entel-blue { background-color: #0033a0; }
+        .entel-orange { color: #ff8200; }
+        .card-promo { border-left: 6px solid #ff8200; }
+    </style>
+</head>
+<body>
 
-            const items = baseDeDatos.filter(item => 
-                String(item.modelo).toLowerCase().includes(filter.toLowerCase()) || 
-                String(item.sku).toLowerCase().includes(filter.toLowerCase())
-            );
+    <div class="sticky top-0 z-50 entel-blue shadow-lg px-4 py-6">
+        <div class="max-w-md mx-auto">
+            <div class="flex justify-center mb-4">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Entel_Chile_logo.svg/1200px-Entel_Chile_logo.svg.png" 
+                     alt="Entel" class="h-8 invert">
+            </div>
+            <input type="text" id="buscador" placeholder="Buscar modelo o código de barras..." 
+                   class="w-full p-4 rounded-2xl shadow-inner text-lg focus:ring-4 focus:ring-orange-400 outline-none transition-all">
+        </div>
+    </div>
 
-            if (items.length === 0) {
-                document.getElementById('noResults').classList.remove('hidden');
+    <div class="max-w-md mx-auto p-4">
+        <div id="status" class="text-center text-xs text-gray-500 mb-4 font-bold uppercase tracking-widest">Cargando base de datos...</div>
+        
+        <div id="lista-equipos" class="space-y-4"></div>
+        
+        <div id="vacio" class="hidden text-center py-10">
+            <p class="text-gray-400">No se encontraron equipos con ese nombre.</p>
+        </div>
+    </div>
+
+    <script>
+        let equipos = [];
+
+        // Función para leer el archivo Excel
+        async function cargarBaseDatos() {
+            try {
+                const response = await fetch('precios.xlsx');
+                const data = await response.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                const hoja = workbook.Sheets[workbook.SheetNames[0]];
+                
+                // Convertimos a JSON
+                equipos = XLSX.utils.sheet_to_json(hoja);
+                
+                document.getElementById('status').innerText = `✅ ${equipos.length} EQUIPOS CARGADOS`;
+                render(equipos);
+            } catch (e) {
+                document.getElementById('status').innerText = "❌ ERROR: No se encontró precios.xlsx";
+            }
+        }
+
+        function render(lista) {
+            const contenedor = document.getElementById('lista-equipos');
+            const vacio = document.getElementById('vacio');
+            contenedor.innerHTML = "";
+
+            if (lista.length === 0) {
+                vacio.classList.remove('hidden');
                 return;
             }
-            document.getElementById('noResults').classList.add('hidden');
+            vacio.classList.add('hidden');
 
-            items.forEach(item => {
-                // Leemos los datos directos del Excel
-                const pPlan = Number(item.precio_plan) || 0;
-                const dsctoRealizado = Number(item.descuento) || 0;
-                
-                resultsGrid.innerHTML += `
-                    <div class="bg-white rounded-2xl shadow-md p-5 border-l-8 border-orange-500 hover:shadow-xl transition-all">
+            lista.forEach(item => {
+                // Adaptamos las columnas del Excel a la App
+                const nombre = item.Descripción || "Sin nombre";
+                const sku = item.COD_BARRA || item.SKU || "000000";
+                const descuento = item.DCTO || 0;
+                const precioFinal = item.QUEDA_CON || item.PRECIO_PLAN || 0;
+
+                contenedor.innerHTML += `
+                    <div class="bg-white rounded-3xl shadow-md p-5 card-promo">
                         <div class="flex justify-between items-start mb-2">
-                            <span class="text-[10px] font-bold bg-gray-100 px-2 py-1 rounded text-gray-500">SKU: ${item.sku}</span>
-                            <button onclick="copyToClipboard('${item.sku}')" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-bold hover:bg-blue-100">📋 Copiar SKU</button>
+                            <span class="text-[10px] font-black bg-gray-100 text-gray-400 px-2 py-1 rounded">COD: ${sku}</span>
                         </div>
                         
-                        <h3 class="text-gray-800 font-bold text-lg mb-4 h-12 overflow-hidden">${item.modelo}</h3>
+                        <h2 class="text-blue-900 font-black text-xl leading-tight mb-4 uppercase italic">${nombre}</h2>
                         
-                        <div class="bg-blue-50 rounded-xl p-4">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-[11px] text-blue-700 font-bold uppercase tracking-wider">Descuento aplicado</span>
-                                <span class="bg-green-500 text-white text-xs font-black px-2 py-1 rounded">-$${dsctoRealizado.toLocaleString('es-CL')}</span>
+                        <div class="flex items-center justify-between border-t border-gray-100 pt-4">
+                            <div>
+                                <span class="block text-[10px] text-green-600 font-black uppercase tracking-widest">Descuento</span>
+                                <span class="text-lg font-bold text-green-600">-$${descuento.toLocaleString('es-CL')}</span>
                             </div>
-                            
-                            <div class="border-t border-blue-100 pt-3">
-                                <span class="block text-[11px] text-gray-500 font-black uppercase tracking-tighter">Valor con Plan Entel</span>
-                                <div class="flex items-baseline gap-1">
-                                    <span class="text-3xl font-black text-blue-900">$${pPlan.toLocaleString('es-CL')}</span>
-                                    <span class="text-sm text-blue-900 font-bold">IVA incl.</span>
-                                </div>
+                            <div class="text-right">
+                                <span class="block text-[10px] text-orange-500 font-black uppercase tracking-widest">Precio con Plan</span>
+                                <span class="text-3xl font-black text-blue-900">$${precioFinal.toLocaleString('es-CL')}</span>
                             </div>
                         </div>
                     </div>
                 `;
             });
         }
+
+        // Buscador en tiempo real
+        document.getElementById('buscador').addEventListener('input', (e) => {
+            const busqueda = e.target.value.toLowerCase();
+            const filtrados = equipos.filter(eq => 
+                String(eq.Descripción).toLowerCase().includes(busqueda) || 
+                String(eq.COD_BARRA).toLowerCase().includes(busqueda)
+            );
+            render(filtrados);
+        });
+
+        window.onload = cargarBaseDatos;
+    </script>
+</body>
+</html>
