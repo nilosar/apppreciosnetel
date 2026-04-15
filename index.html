@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entel - Consultor de Ofertas Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f0f4f8; }
+        .entel-blue { background: linear-gradient(90deg, #0033a0 0%, #0056fb 100%); }
+        .entel-orange { background: linear-gradient(90deg, #ff8200 0%, #ffaa00 100%); }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 51, 160, 0.1), 0 8px 10px -6px rgba(0, 51, 160, 0.1); }
+    </style>
+</head>
+<body class="pb-10">
+
+    <div class="entel-blue pt-8 pb-12 px-4 shadow-2xl rounded-b-[3rem]">
+        <div class="max-w-md mx-auto text-center">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Entel_Chile_logo.svg/1200px-Entel_Chile_logo.svg.png" 
+                 alt="Entel" class="h-10 mx-auto mb-6 invert">
+            
+            <div class="relative">
+                <input type="text" id="buscador" 
+                       placeholder="Buscar equipo o código..." 
+                       class="w-full p-5 rounded-2xl shadow-2xl text-lg outline-none focus:ring-4 focus:ring-orange-400 border-none">
+                <span class="absolute right-5 top-5 opacity-30 text-2xl">🔍</span>
+            </div>
+            <div id="contador" class="mt-4 text-blue-100 text-xs font-bold uppercase tracking-widest">Cargando base de datos...</div>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto p-4 -mt-6">
+        <div id="lista-equipos" class="grid gap-6">
+            </div>
+    </div>
+
+    <script>
+        let baseDatos = [];
+
+        async function cargarExcel() {
+            try {
+                const res = await fetch('precios.xlsx');
+                const buf = await res.arrayBuffer();
+                const wb = XLSX.read(buf, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                baseDatos = XLSX.utils.sheet_to_json(ws);
+                
+                document.getElementById('contador').innerText = `${baseDatos.length} Equipos en Oferta`;
+                render(baseDatos);
+            } catch (e) {
+                document.getElementById('contador').innerText = "❌ No se encontró el archivo precios.xlsx";
+            }
+        }
+
+        function render(items) {
+            const grid = document.getElementById('lista-equipos');
+            grid.innerHTML = "";
+
+            items.forEach(item => {
+                // MAPEO DE COLUMNAS SEGÚN TU EXCEL REAL:
+                const nombre = item['Descripción'] || "Equipo";
+                const sku = item['COD_BARRA'] || item['SKU'] || "N/A";
+                const descuento = item['DCTO'] || 0;
+                
+                // Buscamos el valor en "QUEDA CON MANDATO LIGTH" o similares
+                const precioFinal = item['QUEDA CON MANDATO LIGTH'] || item['QUEDA CON'] || 0;
+
+                grid.innerHTML += `
+                    <div class="bg-white rounded-[2rem] overflow-hidden card-shadow border border-blue-50">
+                        <div class="bg-gray-50 p-4 border-b border-gray-100 flex justify-between items-center">
+                            <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-tighter">
+                                SKU: ${sku}
+                            </span>
+                            <button onclick="copy('${sku}')" class="text-xs font-bold text-gray-400 hover:text-orange-500 transition-colors">Copiar Código</button>
+                        </div>
+
+                        <div class="p-6">
+                            <h2 class="text-blue-900 font-black text-xl mb-6 leading-tight uppercase">${nombre}</h2>
+                            
+                            <div class="flex items-center gap-4">
+                                <div class="flex-1 bg-green-50 p-3 rounded-2xl border border-green-100">
+                                    <span class="block text-[9px] text-green-600 font-black uppercase">Ahorro</span>
+                                    <span class="text-lg font-black text-green-500">-$${Number(descuento).toLocaleString('es-CL')}</span>
+                                </div>
+
+                                <div class="flex-1 entel-orange p-3 rounded-2xl shadow-lg transform scale-110">
+                                    <span class="block text-[9px] text-white font-black uppercase opacity-80">Pagas con Plan</span>
+                                    <span class="text-2xl font-black text-white">$${Number(precioFinal).toLocaleString('es-CL')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function copy(txt) {
+            navigator.clipboard.writeText(txt);
+            alert("SKU copiado al portapapeles");
+        }
+
+        document.getElementById('buscador').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filt = baseDatos.filter(eq => 
+                String(eq['Descripción']).toLowerCase().includes(val) || 
+                String(eq['COD_BARRA']).toLowerCase().includes(val)
+            );
+            render(filt);
+        });
+
+        window.onload = cargarExcel;
+    </script>
+</body>
+</html>
