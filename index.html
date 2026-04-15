@@ -25,7 +25,7 @@
             <input type="text" id="buscador" 
                    placeholder="Buscar modelo o SKU..." 
                    class="w-full p-4 rounded-2xl shadow-xl text-lg outline-none focus:ring-4 focus:ring-orange-400 border-none text-gray-900">
-            <div id="contador" class="mt-4 text-blue-200 text-[10px] font-bold uppercase tracking-widest uppercase">Sincronizando...</div>
+            <div id="contador" class="mt-4 text-blue-200 text-[10px] font-bold uppercase tracking-widest">Sincronizando...</div>
         </div>
     </div>
 
@@ -38,6 +38,85 @@
 
         async function cargarExcel() {
             try {
-                const res = await fetch('precios.xlsx');
+                // Agregamos un número aleatorio al final para evitar que el navegador guarde una versión vieja (caché)
+                const res = await fetch('precios.xlsx?v=' + Math.random());
                 const buf = await res.arrayBuffer();
-                const wb = XLSX.read(
+                const wb = XLSX.read(buf, { type: 'array' });
+                
+                // Intentamos leer la hoja "OFERTA ML" o la primera que tenga datos
+                const nombreHoja = wb.SheetNames.find(n => n.includes('ML')) || wb.SheetNames[0];
+                const ws = wb.Sheets[nombreHoja];
+                
+                // range: 1 obliga a saltarse la primera fila de título si existe
+                baseDatos = XLSX.utils.sheet_to_json(ws, { defval: "" });
+                
+                // Filtrar solo filas que tengan una descripción real
+                baseDatos = baseDatos.filter(item => item['Descripción'] && item['Descripción'] !== "Descripción");
+
+                document.getElementById('contador').innerText = `${baseDatos.length} OFERTAS CARGADAS`;
+                render(baseDatos);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('contador').innerText = "⚠️ ERROR AL CARGAR EXCEL";
+            }
+        }
+
+        function render(items) {
+            const grid = document.getElementById('lista-equipos');
+            grid.innerHTML = "";
+
+            items.forEach(item => {
+                const desc = item['Descripción'];
+                const cod = item['COD_BARRA'];
+                const dcto = item['DCTO'];
+                const precio = item['QUEDA CON MANDATO LIGTH'] || item['QUEDA CON'];
+
+                if (desc && precio) {
+                    grid.innerHTML += `
+                        <div class="card-glass overflow-hidden shadow-2xl transition-transform active:scale-95">
+                            <div class="px-6 py-2 bg-white/5 flex justify-between items-center border-b border-white/10">
+                                <span class="text-[9px] font-bold text-blue-300 tracking-tighter uppercase">SKU: ${cod || '---'}</span>
+                                <button onclick="copy('${cod}')" class="text-[9px] font-black text-orange-400">COPIAR</button>
+                            </div>
+
+                            <div class="p-6">
+                                <h2 class="text-white font-bold text-lg mb-6 leading-tight uppercase tracking-tight">
+                                    ${desc}
+                                </h2>
+                                
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1 bg-white/5 p-3 rounded-2xl border border-white/10 text-center">
+                                        <span class="block text-[8px] text-gray-400 font-bold uppercase">Descuento</span>
+                                        <span class="text-xl font-black text-green-400">-$${Number(dcto || 0).toLocaleString('es-CL')}</span>
+                                    </div>
+
+                                    <div class="flex-1 entel-orange-bg p-3 rounded-2xl shadow-lg transform scale-110 text-center">
+                                        <span class="block text-[8px] text-white font-black uppercase opacity-80">Valor con Plan</span>
+                                        <span class="text-2xl font-black text-white">$${Number(precio).toLocaleString('es-CL')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function copy(text) {
+            navigator.clipboard.writeText(text);
+            alert("SKU Copiado");
+        }
+
+        document.getElementById('buscador').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filt = baseDatos.filter(eq => 
+                String(eq['Descripción']).toLowerCase().includes(val) || 
+                String(eq['COD_BARRA']).toLowerCase().includes(val)
+            );
+            render(filt);
+        });
+
+        window.onload = cargarExcel;
+    </script>
+</body>
+</html>
