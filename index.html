@@ -10,7 +10,8 @@
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #0a192f; color: #fff; }
         .entel-blue { background: linear-gradient(135deg, #0033a0 0%, #0645ad 100%); }
-        .entel-orange { background: linear-gradient(90deg, #ff8200 0%, #ffaa00 100%); }
+        .entel-orange-text { color: #ff8200; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .entel-orange-bg { background: linear-gradient(90deg, #ff8200 0%, #ffaa00 100%); }
         .card-glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2rem; }
     </style>
 </head>
@@ -18,8 +19,8 @@
 
     <div class="entel-blue pt-10 pb-12 px-6 shadow-2xl rounded-b-[3rem] mb-8 sticky top-0 z-50">
         <div class="max-w-md mx-auto text-center">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Entel_Chile_logo.svg/1200px-Entel_Chile_logo.svg.png" 
-                 alt="Entel" class="h-8 mx-auto mb-6 invert">
+            <h1 class="text-5xl font-black entel-orange-text mb-6 tracking-tighter">Entel</h1>
+            
             <input type="text" id="buscador" 
                    placeholder="Buscar modelo o SKU..." 
                    class="w-full p-4 rounded-2xl shadow-xl text-lg outline-none focus:ring-4 focus:ring-orange-400 border-none text-gray-900">
@@ -59,7 +60,6 @@
                 const dcto = item['DCTO'];
                 const precio = item['QUEDA CON MANDATO LIGTH'];
 
-                // Solo procesar si tiene descripción y precio (evita filas vacías)
                 if (desc && precio !== undefined) {
                     grid.innerHTML += `
                         <div class="card-glass overflow-hidden shadow-2xl transition-transform active:scale-95">
@@ -74,14 +74,14 @@
                                 </h2>
                                 
                                 <div class="flex items-center gap-4">
-                                    <div class="flex-1 bg-white/5 p-3 rounded-2xl border border-white/10">
+                                    <div class="flex-1 bg-white/5 p-3 rounded-2xl border border-white/10 text-center">
                                         <span class="block text-[8px] text-gray-400 font-bold uppercase">Descuento</span>
                                         <span class="text-xl font-black text-green-400">-$${Number(dcto || 0).toLocaleString('es-CL')}</span>
                                     </div>
 
-                                    <div class="flex-1 entel-orange p-3 rounded-2xl shadow-lg transform scale-110">
-                                        <span class="block text-[8px] text-white font-black uppercase opacity-80 text-center">Valor con Plan</span>
-                                        <span class="text-2xl font-black text-white block text-center">$${Number(precio).toLocaleString('es-CL')}</span>
+                                    <div class="flex-1 entel-orange-bg p-3 rounded-2xl shadow-lg transform scale-110 text-center">
+                                        <span class="block text-[8px] text-white font-black uppercase opacity-80">Valor con Plan</span>
+                                        <span class="text-2xl font-black text-white">$${Number(precio).toLocaleString('es-CL')}</span>
                                     </div>
                                 </div>
                             </div>
