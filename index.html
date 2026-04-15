@@ -8,25 +8,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #f3f6ff; }
-        .entel-blue { background: linear-gradient(135deg, #0033a0 0%, #0056fb 100%); }
+        body { font-family: 'Poppins', sans-serif; background-color: #0a192f; color: #fff; }
+        .entel-blue { background: linear-gradient(135deg, #0033a0 0%, #0645ad 100%); }
         .entel-orange { background: linear-gradient(90deg, #ff8200 0%, #ffaa00 100%); }
-        .card-pop { border-radius: 2rem; }
+        .card-glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2rem; }
     </style>
 </head>
 <body class="pb-10">
 
-    <div class="entel-blue pt-10 pb-16 px-6 shadow-2xl rounded-b-[3.5rem] mb-6">
+    <div class="entel-blue pt-10 pb-12 px-6 shadow-2xl rounded-b-[3rem] mb-8 sticky top-0 z-50">
         <div class="max-w-md mx-auto text-center">
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Entel_Chile_logo.svg/1200px-Entel_Chile_logo.svg.png" 
-                 alt="Entel" class="h-10 mx-auto mb-6 invert">
-            
-            <div class="relative">
-                <input type="text" id="buscador" 
-                       placeholder="Buscar modelo o SKU..." 
-                       class="w-full p-5 rounded-2xl shadow-xl text-lg outline-none focus:ring-4 focus:ring-orange-400 border-none transition-all">
-            </div>
-            <div id="contador" class="mt-4 text-blue-100 text-[10px] font-bold uppercase tracking-widest">Cargando datos...</div>
+                 alt="Entel" class="h-8 mx-auto mb-6 invert">
+            <input type="text" id="buscador" 
+                   placeholder="Buscar modelo o SKU..." 
+                   class="w-full p-4 rounded-2xl shadow-xl text-lg outline-none focus:ring-4 focus:ring-orange-400 border-none text-gray-900">
+            <div id="contador" class="mt-4 text-blue-200 text-[10px] font-bold uppercase tracking-widest">Sincronizando...</div>
         </div>
     </div>
 
@@ -42,13 +39,13 @@
                 const res = await fetch('precios.xlsx');
                 const buf = await res.arrayBuffer();
                 const wb = XLSX.read(buf, { type: 'array' });
-                const ws = wb.Sheets[workbook.SheetNames[0] || wb.SheetNames[1]]; // Busca en las hojas disponibles
+                const ws = wb.Sheets[wb.SheetNames[0]]; 
                 baseDatos = XLSX.utils.sheet_to_json(ws);
                 
-                document.getElementById('contador').innerText = `${baseDatos.length} Ofertas disponibles`;
+                document.getElementById('contador').innerText = `${baseDatos.length} OFERTAS CARGADAS`;
                 render(baseDatos);
             } catch (e) {
-                document.getElementById('contador').innerText = "⚠️ Error: Verifica precios.xlsx";
+                document.getElementById('contador').innerText = "⚠️ ERROR: Verifica el archivo precios.xlsx";
             }
         }
 
@@ -57,34 +54,34 @@
             grid.innerHTML = "";
 
             items.forEach(item => {
-                const descripcion = item['Descripción'] || "Sin nombre";
-                const codBarra = item['COD_BARRA'] || "N/A";
-                const dcto = item['DCTO'] || 0;
-                const precioFinal = item['QUEDA CON MANDATO LIGTH'] || item['QUEDA CON'] || 0;
+                const desc = item['Descripción'];
+                const cod = item['COD_BARRA'];
+                const dcto = item['DCTO'];
+                const precio = item['QUEDA CON MANDATO LIGTH'];
 
-                // Solo mostramos si hay un precio final válido
-                if (precioFinal && !isNaN(precioFinal)) {
+                // Solo procesar si tiene descripción y precio (evita filas vacías)
+                if (desc && precio !== undefined) {
                     grid.innerHTML += `
-                        <div class="bg-white card-pop shadow-xl overflow-hidden border border-blue-50">
-                            <div class="bg-gray-100 px-6 py-2 flex justify-between items-center border-b border-gray-200">
-                                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">SKU EQUIPO: ${codBarra}</span>
-                                <button onclick="copy('${codBarra}')" class="text-[10px] font-black text-blue-600">COPIAR</button>
+                        <div class="card-glass overflow-hidden shadow-2xl transition-transform active:scale-95">
+                            <div class="px-6 py-2 bg-white/5 flex justify-between items-center border-b border-white/10">
+                                <span class="text-[9px] font-bold text-blue-300 tracking-tighter uppercase">SKU: ${cod || '---'}</span>
+                                <button onclick="copy('${cod}')" class="text-[9px] font-black text-orange-400">COPIAR</button>
                             </div>
 
                             <div class="p-6">
-                                <h2 class="text-blue-900 font-black text-xl mb-6 leading-tight uppercase">
-                                    ${descripcion}
+                                <h2 class="text-white font-bold text-lg mb-6 leading-tight uppercase tracking-tight">
+                                    ${desc}
                                 </h2>
                                 
-                                <div class="flex items-center gap-3">
-                                    <div class="flex-1 bg-green-50 p-3 rounded-2xl border border-green-100 text-center">
-                                        <span class="block text-[9px] text-green-600 font-black uppercase">Descuento</span>
-                                        <span class="text-xl font-black text-green-500">-$${Number(dcto).toLocaleString('es-CL')}</span>
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1 bg-white/5 p-3 rounded-2xl border border-white/10">
+                                        <span class="block text-[8px] text-gray-400 font-bold uppercase">Descuento</span>
+                                        <span class="text-xl font-black text-green-400">-$${Number(dcto || 0).toLocaleString('es-CL')}</span>
                                     </div>
 
-                                    <div class="flex-1 entel-orange p-3 rounded-2xl shadow-lg text-center transform scale-105">
-                                        <span class="block text-[9px] text-white font-black uppercase opacity-90">Valor Final</span>
-                                        <span class="text-2xl font-black text-white">$${Number(precioFinal).toLocaleString('es-CL')}</span>
+                                    <div class="flex-1 entel-orange p-3 rounded-2xl shadow-lg transform scale-110">
+                                        <span class="block text-[8px] text-white font-black uppercase opacity-80 text-center">Valor con Plan</span>
+                                        <span class="text-2xl font-black text-white block text-center">$${Number(precio).toLocaleString('es-CL')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -94,9 +91,9 @@
             });
         }
 
-        function copy(sku) {
-            navigator.clipboard.writeText(sku);
-            alert("Código copiado");
+        function copy(text) {
+            navigator.clipboard.writeText(text);
+            alert("SKU Copiado");
         }
 
         document.getElementById('buscador').addEventListener('input', (e) => {
