@@ -1,60 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador Entel Excel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        .entel-blue { background-color: #0033a0; }
-        .sticky-header { position: sticky; top: 0; z-index: 50; }
-    </style>
-</head>
-<body class="bg-gray-100">
-
-    <div class="sticky-header entel-blue p-4 shadow-xl">
-        <div class="max-w-4xl mx-auto text-center">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Entel_Chile_logo.svg/1200px-Entel_Chile_logo.svg.png" 
-                 alt="Entel" class="h-8 mx-auto mb-4 invert">
-            <input type="text" id="searchInput" placeholder="Buscar en el Excel por SKU o Modelo..." 
-                   class="w-full p-4 rounded-xl shadow-inner text-lg outline-none focus:ring-4 focus:ring-orange-500">
-        </div>
-    </div>
-
-    <div class="max-w-5xl mx-auto p-4 mt-4">
-        <div id="status" class="text-center text-sm text-gray-500 mb-4">Cargando base de datos...</div>
-        <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-    </div>
-
-    <script>
-        let baseDeDatos = [];
-
-        // Función para leer el archivo Excel
-        async function cargarExcel() {
-            try {
-                // Cambia 'precios.xlsx' por la ruta de tu archivo
-                const response = await fetch('precios.xlsx');
-                const arrayBuffer = await response.arrayBuffer();
-                const data = new Uint8Array(arrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                
-                // Leer la primera hoja
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                
-                // Convertir a JSON
-                baseDeDatos = XLSX.utils.sheet_to_json(worksheet);
-                
-                document.getElementById('status').innerText = `Base de datos lista: ${baseDeDatos.length} equipos cargados.`;
-                renderCards();
-            } catch (error) {
-                console.error(error);
-                document.getElementById('status').innerText = "Error: No se pudo cargar el archivo precios.xlsx";
-            }
-        }
-
-        function renderCards(filter = "") {
+function renderCards(filter = "") {
             const resultsGrid = document.getElementById('resultsGrid');
             resultsGrid.innerHTML = "";
 
@@ -63,34 +7,48 @@
                 String(item.sku).toLowerCase().includes(filter.toLowerCase())
             );
 
+            if (items.length === 0) {
+                document.getElementById('noResults').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('noResults').classList.add('hidden');
+
             items.forEach(item => {
-                const precioNormal = Number(item.precio) || 0;
-                const descuento = Number(item.descuento) || 0;
-                const precioFinal = precioNormal - descuento;
+                // Leemos los valores directamente del Excel sin cálculos extra
+                const pNormal = Number(item.precio) || 0;
+                const pPlan = Number(item.precio_plan) || 0;
+                
+                // Calculamos el ahorro solo para mostrarlo como info adicional
+                const ahorro = pNormal - pPlan;
                 
                 resultsGrid.innerHTML += `
-                    <div class="bg-white rounded-2xl shadow-md p-5 border-l-8 border-blue-800">
-                        <span class="text-[10px] font-bold bg-gray-100 px-2 py-1 rounded">SKU: ${item.sku}</span>
-                        <h3 class="text-gray-800 font-bold text-lg my-2">${item.modelo}</h3>
-                        <div class="flex justify-between border-t pt-3">
-                            <div>
-                                <span class="block text-[10px] text-gray-400 uppercase">Normal</span>
-                                <span class="text-gray-400 line-through">$${precioNormal.toLocaleString('es-CL')}</span>
+                    <div class="bg-white rounded-2xl shadow-md p-5 border-l-8 border-blue-800 hover:shadow-xl transition-all">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[10px] font-bold bg-gray-100 px-2 py-1 rounded text-gray-500">SKU: ${item.sku}</span>
+                            <button onclick="copyToClipboard('${item.sku}')" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-bold hover:bg-blue-100">📋 Copiar</button>
+                        </div>
+                        
+                        <h3 class="text-gray-800 font-bold text-lg mb-4 h-12 overflow-hidden">${item.modelo}</h3>
+                        
+                        <div class="bg-gray-50 rounded-xl p-3">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[10px] text-gray-400 font-bold uppercase">Precio Normal</span>
+                                <span class="text-gray-500 line-through font-medium">$${pNormal.toLocaleString('es-CL')}</span>
                             </div>
-                            <div class="text-right">
-                                <span class="block text-[10px] text-orange-500 font-bold uppercase">Con Plan</span>
-                                <span class="text-2xl font-black text-blue-900">$${precioFinal.toLocaleString('es-CL')}</span>
+                            
+                            <div class="flex justify-between items-end border-t border-gray-200 pt-2 mt-1">
+                                <div>
+                                    <span class="block text-[11px] text-orange-500 font-black uppercase tracking-tighter">Precio con Plan</span>
+                                    <span class="text-3xl font-black text-blue-900">$${pPlan.toLocaleString('es-CL')}</span>
+                                </div>
+                                ${ahorro > 0 ? `
+                                <div class="text-right">
+                                    <span class="block text-[10px] text-green-600 font-bold">AHORRO</span>
+                                    <span class="text-sm font-bold text-green-600">-$${ahorro.toLocaleString('es-CL')}</span>
+                                </div>` : ''}
                             </div>
                         </div>
                     </div>
                 `;
             });
         }
-
-        document.getElementById('searchInput').addEventListener('input', (e) => renderCards(e.target.value));
-        
-        // Ejecutar carga al abrir
-        window.onload = cargarExcel;
-    </script>
-</body>
-</html>
